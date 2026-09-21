@@ -6,7 +6,7 @@ clicking through the portal.
 
 ## Setup
 
-Nothing to provision. The first time the agent calls a DemoHub tool, it opens a Google
+Nothing to provision. The first time the agent calls a DemoHub tool, it opens an Okta
 OAuth login in your browser — sign in with your `@unit8.co` account, same as the portal.
 There's no token to mint, copy, or rotate; the MCP server authenticates the agent as you.
 Both Claude Code and Codex also ask you to approve/trust the plugin's MCP config the
