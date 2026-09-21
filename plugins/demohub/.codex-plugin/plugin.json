@@ -1,6 +1,6 @@
 {
   "name": "demohub",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Connect Codex to unit8 DemoHub's MCP server: list, create, verify, build, start, and stop demo apps without leaving the agent.",
   "author": {
     "name": "unit8",
@@ -18,7 +18,7 @@
     "developerName": "unit8",
     "category": "Productivity",
     "capabilities": ["Read", "Run Commands"],
-    "websiteURL": "https://demo.shnei.de",
+    "websiteURL": "https://demo.unit8.io",
     "defaultPrompt": [
       "List my DemoHub demos.",
       "Check the status of demo <slug>.",
