@@ -1,8 +1,7 @@
 {
   "mcpServers": {
     "demohub": {
-      "url": "https://agent-api.demo.shnei.de/mcp/",
-      "bearer_token_env_var": "DEMOHUB_AGENT_TOKEN"
+      "url": "https://demo.unit8.io/mcp"
     }
   }
 }

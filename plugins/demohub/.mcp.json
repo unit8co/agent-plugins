@@ -2,11 +2,7 @@
   "mcpServers": {
     "demohub": {
       "type": "http",
-      "url": "https://agent-api.demo.shnei.de/mcp/",
-      "headers": {
-        "Authorization": "Bearer ${DEMOHUB_AGENT_TOKEN}"
-      },
-      "_comment": "Requires the DEMOHUB_AGENT_TOKEN env var to be set locally — see this plugin's README."
+      "url": "https://demo.unit8.io/mcp"
     }
   }
 }
