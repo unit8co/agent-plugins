@@ -1,0 +1,12 @@
+{
+  "name": "demohub",
+  "description": "Connect Claude to unit8 DemoHub's MCP server: list, create, verify, build, start, and stop demo apps without leaving the agent.",
+  "version": "0.1.0",
+  "author": {
+    "name": "unit8",
+    "url": "https://github.com/marcschneideru8"
+  },
+  "homepage": "https://github.com/marcschneideru8/agent-plugins/tree/main/plugins/demohub",
+  "license": "MIT",
+  "keywords": ["demohub", "unit8", "mcp", "demos", "deployment"]
+}
