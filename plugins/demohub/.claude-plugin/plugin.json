@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "author": {
     "name": "unit8",
-    "url": "https://github.com/marcschneideru8"
+    "url": "https://github.com/unit8co"
   },
-  "homepage": "https://github.com/marcschneideru8/agent-plugins/tree/main/plugins/demohub",
+  "homepage": "https://github.com/unit8co/agent-plugins/tree/main/plugins/demohub",
   "license": "MIT",
   "keywords": ["demohub", "unit8", "mcp", "demos", "deployment"]
 }

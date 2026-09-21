@@ -5,13 +5,13 @@ once, install what you need.
 
 **Claude Code**
 ```
-/plugin marketplace add marcschneideru8/agent-plugins
+/plugin marketplace add unit8co/agent-plugins
 /plugin install demohub@unit8
 ```
 
 **Codex**
 ```
-codex plugin marketplace add marcschneideru8/agent-plugins
+codex plugin marketplace add unit8co/agent-plugins
 codex plugin add demohub@unit8
 ```
 
