@@ -22,9 +22,37 @@ same ones the portal enforces.
 `verify_deploy_key`, `get_deploy_key`, `build`, `get_build`, `start`, `stop`, `restart`,
 `touch`, `get_logs`, `get_env`, `set_env`, `clear_data`, `get_current_user`.
 
+The MCP server itself also carries top-level instructions describing the
+create → deploy-key → verify → start sequence, so any MCP client gets that workflow even
+without this plugin's skill below.
+
+## `/demo-init` — get a repo ready to deploy
+
+`skills/demo-init/` ships alongside the MCP config and is auto-discovered by both Claude
+Code and Codex (Codex plugins don't support bundled slash-commands, only skills — this is
+the one artifact that works the same way in both). Run `/demo-init` in a repo you want on
+DemoHub, or just ask to "deploy this to DemoHub" / "set up a demo for this repo" — the
+skill's description triggers it either way. It:
+
+1. Looks at what's already in the repo before asking anything.
+2. Asks whether the app is single-container (`Dockerfile` + optional `demo.yaml`) or
+   multi-container (`docker-compose.yml`), if that isn't already obvious from what's there.
+3. Scaffolds whichever files are missing — never overwrites anything you already have.
+4. Calls `create_demo`, adds the returned deploy key to the GitHub repo (via `gh repo
+   deploy-key add` if `gh` is authenticated, otherwise prints it for you to paste in),
+   then `verify_deploy_key`.
+
+It stops there by default — building and starting is a separate ask, since getting a repo
+ready to deploy and actually deploying it are different amounts of "do this for me."
+
+Full walkthrough this plugin is the fast path through:
+[`docs/CREATING_A_DEMO.md`](https://github.com/unit8co/demohub/blob/main/docs/CREATING_A_DEMO.md)
+in `unit8co/demohub`.
+
 ## Files
 
 - `.claude-plugin/plugin.json` — Claude Code plugin manifest
 - `.mcp.json` — MCP server config for Claude Code (auto-loaded from the plugin root)
 - `.codex-plugin/plugin.json` — Codex plugin manifest
 - `mcp.codex.json` — MCP server config for Codex (referenced from the Codex manifest)
+- `skills/demo-init/SKILL.md` — the `/demo-init` skill, auto-discovered by both tools
