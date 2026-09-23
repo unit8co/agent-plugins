@@ -1,12 +1,12 @@
 ---
 name: demo-init
-description: Set up the current repo to deploy on unit8 DemoHub — ask whether it's a single-container or multi-container app, scaffold whichever of Dockerfile/demo.yaml/docker-compose.yml is missing, and register the demo + deploy key via the demohub MCP tools. Use when the user runs /demo-init, or asks to deploy/init/prepare this repo for DemoHub, set up a demo, or get this app onto DemoHub.
+description: Set up the current repo to deploy on unit8 DemoHub — check what already exists (on DemoHub via MCP, and in the repo on disk), scaffold a Dockerfile/demo.yaml if missing, register the demo + deploy key, and drive it through build/start until it's live at <slug>.demo.unit8.io. Use when the user runs /demo-init, or asks to deploy/init/prepare this repo for DemoHub, set up a demo, or get this app onto DemoHub.
 ---
 
 # demo-init
 
-Gets a git repo from "has an app in it" to "registered on DemoHub with a verified deploy
-key," doing as much of it as this session can reach and asking for the rest. Full
+Gets a git repo from "has an app in it" to "running on DemoHub," doing as much of it as
+this session can reach and asking only for what it genuinely can't determine itself. Full
 human-facing walkthrough, if you want the wider context: `docs/CREATING_A_DEMO.md` in
 `unit8co/demohub` (https://github.com/unit8co/demohub/blob/main/docs/CREATING_A_DEMO.md).
 
@@ -14,29 +14,26 @@ Requires the `demohub` MCP server (this plugin bundles it). If tools like `creat
 `verify_deploy_key` aren't available, stop and tell the user to install/enable the
 `demohub` plugin first.
 
-## 0. Look before asking
+Always target the single-container shape — a `Dockerfile`, optionally paired with a
+`demo.yaml` for port/health/sizing/persistence. Don't ask the user to choose a build
+shape; there's nothing to decide.
 
-Check the repo root for `Dockerfile`, `demo.yaml`, `compose.yaml`, `compose.yml`,
-`docker-compose.yaml`, or `docker-compose.yml` before asking anything. If a Compose file
-already exists, skip straight to step 2 (compose path) using it. If `Dockerfile` already
-exists with no Compose file, skip straight to step 2 (single-container path) — don't
-re-litigate a decision the repo has already made. Only ask when the repo genuinely has
-neither.
+## 1. Figure out what already exists
 
-## 1. Ask which shape fits
+Before touching anything, work out where this repo currently stands:
 
-Ask the user (don't guess): does this app need more than one process — a database, a
-worker, a second service it talks to — or is it one container?
+1. **On DemoHub** — call `list_demos` and look for one whose `repo_ssh_url`/repo matches
+   this repo's `git remote get-url origin` (compare loosely: same owner/repo regardless of
+   ssh vs https form). If you find one, `get_demo`/`get_status` it to see how far it
+   already got (registered but unverified key, verified but never built, built but
+   stopped, already running, etc.) and resume from there instead of starting over.
+2. **In the repo** — check the repo root for `Dockerfile` and `demo.yaml`. Existing files
+   mean that step's done; don't overwrite them.
 
-- **Single container** (default/recommended for most demos): one `Dockerfile`, optionally
-  paired with a `demo.yaml` for port/health/sizing/persistence. Simpler, and what
-  `unit8co/demohub-example` uses.
-- **Multi-container**: a `docker-compose.yml`, inside DemoHub's supported subset (below).
-  Pick this only if the app genuinely needs more than one running container — DemoHub
-  charges disk-backed volumes and extra containers against the same per-demo quota, so
-  don't reach for Compose just to organize a single service.
+Skip straight to whichever step matches the state you find — e.g. a demo that's already
+registered and verified goes straight to step 4.
 
-## 2a. Single container — scaffold if missing
+## 2. Scaffold what's missing
 
 1. **`Dockerfile`**, only if absent: detect the stack from what's in the repo
    (`pyproject.toml`/`requirements.txt` → Python, `package.json` → Node, `go.mod` → Go,
@@ -72,43 +69,13 @@ worker, a second service it talks to — or is it one container?
    Set `container_port`/`health_path` to match what the app you scaffolded/found actually
    does — don't just paste the template unexamined.
 
-## 2b. Multi-container — scaffold if missing
-
-Write a `docker-compose.yml` covering each service the app actually needs, staying inside
-this subset (full spec: `docs/COMPOSE_TRANSLATION.md` in `unit8co/demohub`):
-
-**Supported:** `build` (or `image` without `build`), `ports`/`expose` (every service needs
-one or the other — DemoHub can't infer a port from nothing), `environment`, `healthcheck`
-(→ readiness probe; `start_period` becomes a startup grace period, not an initial delay),
-`depends_on: {condition: service_healthy}` (→ an init container that waits for it),
-`volumes` (named → a PVC; one mounter is `azuredisk`/RWO, two-or-more mounters is
-`azurefile-csi`/RWX — **note SQL databases like Postgres/MySQL/SQLite don't work over the
-RWX/SMB backing, so keep a database volume single-mounter**), `deploy.resources` (CPU/mem
-requests+limits), `user` (numeric only).
-
-**Rejected outright, don't write these:** bind mounts (`./src:/app` — no host filesystem on
-the cluster; use a named volume or bake files into the image), `env_file` (move the values
-into DemoHub's `.env` editor and reference as `${VAR}` in the compose file instead), raw
-`k8s/` manifests alongside it.
-
-**Ignored with a warning, so avoid relying on them:** `restart`, `container_name`, `tty`,
-`networks`, `profiles` (only the default profile deploys).
-
-**The two inverted-name traps**, if any service sets a custom entrypoint/command:
-Compose's `entrypoint` maps to Kubernetes `command`, and Compose's `command` maps to
-Kubernetes `args` — backwards from what the names suggest. Get this wrong and the
-container silently runs the wrong thing.
-
-No `demo.yaml` alongside a Compose file — Compose is the whole spec once it's present.
-
 ## 3. Register the demo and the deploy key
 
-Skip anything already done (e.g. `create_demo` was already called earlier in this
-session, or the user says the demo already exists — then just resume from wherever
-`get_demo` shows it stopped).
+Skip anything already done per the step 1 check.
 
 1. `create_demo(name, repo_ssh_url, branch)` — `repo_ssh_url` can be the repo's HTTPS or
-   SSH URL. Returns `deploy_key_public`.
+   SSH URL. If a sensible `name` isn't obvious (repo name is generic, taken, or the user
+   hasn't said), ask the user for one rather than guessing. Returns `deploy_key_public`.
 2. Add that key to the GitHub repo as a **read-only** deploy key. Prefer the GitHub CLI if
    it's installed and authenticated:
    ```
@@ -121,16 +88,30 @@ session, or the user says the demo already exists — then just resume from wher
 3. `verify_deploy_key(slug)` — confirms the key actually landed via a real `git
    ls-remote`. Don't proceed to build/start until this returns success; nothing else about
    the demo is editable until it does, and it's also the first time DemoHub reads the
-   repo's spec — a mistake in step 2a/2b's files shows up here, not before.
+   repo's spec — a mistake in step 2's files shows up here, not before.
 
-## 4. Hand back control
+## 4. Build, start, and confirm it's live
 
-Stop here unless the user has clearly asked you to also build/start/deploy — this skill's
-job is getting the repo *ready* to deploy, not necessarily deploying it. If they do want it
-running now: `start(slug)` builds automatically on a first start (poll `get_build(slug,
-build_id)` if a `build_id` comes back) and the demo is live at `<slug>.demo.unit8.io` once
-that lands.
+Don't stop at "registered" — the job isn't done until the demo is actually running.
 
-Tell the user what you did and what's left in your own words — which files you
-wrote/found, the demo's slug, whether the deploy key verified, and whether you also started
-it or left that for them.
+1. `start(slug)` — builds an ACR image first if none exists yet, then runs the demo. If
+   the result carries a `build_id`, poll `get_build(slug, build_id)` until it's
+   succeeded/failed, keeping the user posted on progress; a finished build also starts the
+   demo.
+2. If the build fails, or the demo doesn't come up healthy, pull `get_logs(slug)` and fix
+   the underlying issue (Dockerfile, `demo.yaml` port/health path, missing env var) rather
+   than leaving the user with a failed state — then retry `start`/`build`.
+3. `get_status(slug)` (or watch the build outcome) to confirm it's actually running before
+   declaring done.
+4. If the app needs configuration to boot (API keys, feature flags, etc.), use
+   `set_env(slug, vars)` — ask the user for values you can't infer.
+
+Only stop short of a running demo if you hit something you genuinely can't resolve
+yourself (missing secret, failing health check with an unclear cause, GitHub deploy key
+step waiting on the user) — say exactly what's blocking it and what the user needs to do.
+
+## 5. Report back
+
+Tell the user what you did in your own words — which files you wrote/found, the demo's
+slug, whether the deploy key verified, and confirm the URL it's now live at
+(`<slug>.demo.unit8.io`) or exactly what's still blocking that.
