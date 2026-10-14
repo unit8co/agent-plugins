@@ -38,7 +38,13 @@ skill's description triggers it either way. It:
    and on disk (`Dockerfile`/`demo.yaml`), and resumes from wherever that leaves off.
 2. Always targets the single-container shape (`Dockerfile` + optional `demo.yaml`) —
    doesn't ask the user to pick a build shape.
-3. Scaffolds whichever files are missing — never overwrites anything you already have.
+3. Scaffolds a Dockerfile if missing, written to DemoHub's defaults so no `demo.yaml` is
+   needed: listen on `0.0.0.0:8000`, classic `docker build` (no BuildKit-only syntax),
+   ready within 5 minutes, fits 0.25 vCPU / 512 MiB. The skill spells out that whole
+   contract, plus per-stack Dockerfile shapes, and only adds a `demo.yaml` when a default
+   genuinely doesn't fit (another port, several ports, `/data` persistence, an HTTP
+   health path). An existing Dockerfile that breaks the contract (wrong port, binding
+   localhost) gets fixed rather than left to time out.
 4. Calls `create_demo` (asking for a name only if one isn't obvious), adds the returned
    deploy key to the GitHub repo (via `gh repo deploy-key add` if `gh` is authenticated,
    otherwise prints it for you to paste in), then `verify_deploy_key`.
